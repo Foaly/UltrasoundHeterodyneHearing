@@ -1,59 +1,72 @@
-#include <Audio.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <SD.h>
+#include "WavFileWriter/WavFileWriter.hpp"
+#include "Utils.hpp"
+
 #include <SerialFlash.h>
 
-// GUItool: begin automatically generated code
-AudioInputI2S            i2sIn;           //xy=115,157
-AudioFilterStateVariable filter2;        //xy=283,184
-AudioFilterStateVariable filter1;        //xy=488,178
-AudioOutputI2S           i2sOut;           //xy=657,181
-AudioConnection          patchCord1(i2sIn, 1, filter2, 0);
-AudioConnection          patchCord2(filter2, 0, filter1, 0);
-AudioConnection          patchCord3(filter1, 2, i2sOut, 0);
-AudioConnection          patchCord4(filter1, 2, i2sOut, 1);
-AudioControlSGTL5000     sgtl5000_1;     //xy=515,313
-// GUItool: end automatically generated code
+#include <Audio.h>
+#include <Wire.h>
 
+const int Fs = 192000;
 
+//const int myInput = AUDIO_INPUT_LINEIN;
+const int myInput = AUDIO_INPUT_MIC;
 
-// Pin 13 has the LED on Teensy 3.0
-int led = 13;
-unsigned int count = 0;
+AudioPlaySdWav           audioSD;
+AudioSynthWaveform       sine;
+AudioInputI2S            audioInput;
+AudioOutputI2S           audioOutput;
+AudioRecordQueue         queue1;
 
+//record from mic
+AudioConnection          patchCord1(audioInput, 0, queue1, 0);
+AudioConnection          patchCord2(audioSD, 0, audioOutput, 0);
+AudioConnection          patchCord3(audioSD, 0, audioOutput, 1);
 
-// the setup routine runs once when you press reset:
-void setup() 
-{                
-    Serial.begin(115200);
+AudioControlSGTL5000     audioShield;
 
-    AudioMemory(8);
-    sgtl5000_1.enable();
-    sgtl5000_1.volume(0.8);
-    sgtl5000_1.inputSelect(AUDIO_INPUT_MIC);
-    sgtl5000_1.micGain(60);
+elapsedMillis  elapsedMs;
 
-    // State variable (Chamberlin) filter, 12 db/octave
-    filter2.frequency(8000);
-    filter1.frequency(100);
+WavFileWriter wavWriter(queue1);
 
-    // somehow setting pin 13 to OUT breaks the mic input...
-    //pinMode(led, OUTPUT);    
-  
-    delay(1000);
-}
-
-// the loop routine runs over and over again forever:
-void loop() 
-{
-    /*digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(200);               // wait for a second
-    digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
-    delay(500);               // wait for a second
-    */
+void setup() {
+    setI2SFreq(Fs);
     
-    Serial.print("Beep #");
-    Serial.println(count);
-    count = count + 1;
+    Serial.begin(9600);
+    AudioMemory(60);
+    audioShield.enable();
+    audioShield.inputSelect(myInput);
+    audioShield.micGain(40);  //0-63
+    audioShield.volume(0.5);  //0-1
+  
+    sine.begin(WAVEFORM_SINE);
+    sine.amplitude(0.9);
+    sine.frequency(440);
+
+    delay(1000);
+
+    elapsedMs = 0;  
+    Serial.println("Done initilizing! Starting now!");
 }
+
+
+void loop() {
+    if (Serial.available() > 0) {
+        // read the incoming byte:
+        byte incomingByte = Serial.read();
+
+        if ( incomingByte == '1' ) {
+            Serial.println("Start recording!");
+            wavWriter.open("Ultra.wav", Fs, 1);
+        }
+        if ( incomingByte == '2' ) {
+            Serial.println("Stop recording!");
+            wavWriter.close();
+        }
+    }
+
+    if (wavWriter.isWriting())
+        wavWriter.update();
+}
+
+
+
