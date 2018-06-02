@@ -28,6 +28,8 @@ elapsedMillis  elapsedMs;
 
 WavFileWriter wavWriter(queue1);
 
+const int triggerPin = 33;
+
 void setup() {
     setI2SFreq(Fs);
     
@@ -35,12 +37,15 @@ void setup() {
     AudioMemory(60);
     audioShield.enable();
     audioShield.inputSelect(myInput);
-    audioShield.micGain(40);  //0-63
-    audioShield.volume(0.5);  //0-1
+    audioShield.micGain(50);  //0-63
+    audioShield.volume(0.8);  //0-1
   
     sine.begin(WAVEFORM_SINE);
     sine.amplitude(0.9);
     sine.frequency(440);
+
+    pinMode(triggerPin, OUTPUT);
+    digitalWrite(triggerPin, LOW);
 
     delay(1000);
 
@@ -63,6 +68,11 @@ void loop() {
             wavWriter.close();
         }
     }
+
+    // Hold the trigger pin high for at least 10 us
+    digitalWrite(triggerPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(triggerPin, LOW);
 
     if (wavWriter.isWriting())
         wavWriter.update();
