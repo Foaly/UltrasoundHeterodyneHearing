@@ -8,7 +8,7 @@ public:
     virtual void update();
 
 private:
-    //void setupNewBuffer();
+    void setupNewBuffer();
 
     audio_block_t*    m_inputQueueArray[1];
     audio_block_t*    m_output;
@@ -26,10 +26,11 @@ private:
 
 Downsampler::Downsampler() :
     AudioStream(1, m_inputQueueArray),
+    m_output(NULL),
     m_divider(1),
     m_firstRun(true)
 {
-    //setupNewBuffer();
+
 }
 
 
@@ -40,33 +41,28 @@ void Downsampler::setDivider(unsigned int divider)
 }
 
 
-/*void Downsampler::setupNewBuffer()
+void Downsampler::setupNewBuffer()
 {
     m_output = allocate();
-    if (m_output)
+    if (!m_output)
         Serial.println("Failed to allocate audio buffer for downsampling!");
     m_dst = m_output->data;
     m_samplesWritten = 0;
-}*/
+}
 
 
 // TODO: make non power of 2 safe, overlap
-// TODO: refactor + cleanup
 void Downsampler::update()
 {
-  //Serial.println("Starting update");
-
     if (m_firstRun)
     {
-        m_output = allocate();
-        if (!m_output){
-            Serial.println("Failed to allocate audio buffer for downsampling!");
-            return;
-        }
-        m_dst = m_output->data;
-        m_samplesWritten = 0;
+        // I havn't found another way to allocate a buffer other than from here...
+        setupNewBuffer();
         m_firstRun = false;
     }
+
+    if(!m_output)
+        Serial.println("Downsampler output buffer is NULL...");
 
     audio_block_t* inputBlock;
     inputBlock = receiveReadOnly();
@@ -79,27 +75,15 @@ void Downsampler::update()
 
     for (; src < end; src += m_divider)
     {
-        //Serial.println("%d", &*m_dst);
-        //Serial.println(*m_dst);
-        //Serial.println("%d", &*src);
-        //Serial.println(*src);
-
         *m_dst++ = *src;
         m_samplesWritten++;
 
-        //Serial.println(*m_dst);
-
-
-        if (m_samplesWritten == AUDIO_BLOCK_SAMPLES) // off by one?
+        if (m_samplesWritten == AUDIO_BLOCK_SAMPLES)
         {
             transmit(m_output);
             release(m_output);
 
-            m_output = allocate();
-            if (!m_output)
-                Serial.println("Failed to allocate audio buffer for downsampling!");
-            m_dst = m_output->data;
-            m_samplesWritten = 0;
+            setupNewBuffer();
         }
     }
 

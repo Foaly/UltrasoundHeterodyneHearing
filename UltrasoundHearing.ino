@@ -48,6 +48,9 @@ void setup() {
     sine.amplitude(0.9);
     sine.frequency(440);
 
+    // Using a downsampler to transpose the ultrasound to preceivable
+    // tones also introduces timescaling (shortening in this case). 
+    // A proper pitch scaling algorithm would be desirable.
     downsampler.setDivider(divider);
 
     pinMode(triggerPin, OUTPUT);
