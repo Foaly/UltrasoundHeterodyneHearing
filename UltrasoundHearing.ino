@@ -1,4 +1,5 @@
 #include "WavFileWriter/WavFileWriter.hpp"
+#include "WavFileWriter/Downsampler.hpp"
 #include "Utils.hpp"
 
 #include <SerialFlash.h>
@@ -6,43 +7,48 @@
 #include <Audio.h>
 #include <Wire.h>
 
-const int Fs = 192000;
+const int samplingFs = 192000;
+const int divider    = 8;
+const int fileFs     = samplingFs / divider;
 
-//const int myInput = AUDIO_INPUT_LINEIN;
-const int myInput = AUDIO_INPUT_MIC;
+//const int micInput = AUDIO_INPUT_LINEIN;
+const int micInput = AUDIO_INPUT_MIC;
 
-AudioPlaySdWav           audioSD;
 AudioSynthWaveform       sine;
 AudioInputI2S            audioInput;
 AudioOutputI2S           audioOutput;
-AudioRecordQueue         queue1;
+AudioRecordQueue         queue;
+Downsampler              downsampler;
 
 //record from mic
-AudioConnection          patchCord1(audioInput, 0, queue1, 0);
-AudioConnection          patchCord2(audioSD, 0, audioOutput, 0);
-AudioConnection          patchCord3(audioSD, 0, audioOutput, 1);
+AudioConnection          patchCord1(audioInput, 0, downsampler, 0);
+AudioConnection          patchCord2(downsampler, 0, queue, 0);
+AudioConnection          patchCord3(downsampler, 0, audioOutput, 0);
+AudioConnection          patchCord4(downsampler, 0, audioOutput, 1);
 
 AudioControlSGTL5000     audioShield;
 
 elapsedMillis  elapsedMs;
 
-WavFileWriter wavWriter(queue1);
+WavFileWriter wavWriter(queue);
 
 const int triggerPin = 33;
 
 void setup() {
-    setI2SFreq(Fs);
+    setI2SFreq(samplingFs);
     
     Serial.begin(9600);
-    AudioMemory(60);
+    AudioMemory(150);
     audioShield.enable();
-    audioShield.inputSelect(myInput);
+    audioShield.inputSelect(micInput);
     audioShield.micGain(50);  //0-63
     audioShield.volume(0.8);  //0-1
   
     sine.begin(WAVEFORM_SINE);
     sine.amplitude(0.9);
     sine.frequency(440);
+
+    downsampler.setDivider(divider);
 
     pinMode(triggerPin, OUTPUT);
     digitalWrite(triggerPin, LOW);
@@ -61,7 +67,7 @@ void loop() {
 
         if ( incomingByte == '1' ) {
             Serial.println("Start recording!");
-            wavWriter.open("Ultra.wav", Fs, 1);
+            wavWriter.open("Ultra.wav", fileFs, 1);
         }
         if ( incomingByte == '2' ) {
             Serial.println("Stop recording!");
