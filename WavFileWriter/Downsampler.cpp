@@ -10,7 +10,7 @@ Downsampler::Downsampler() :
 }
 
 
-void Downsampler::setDivider(unsigned int divider)
+void Downsampler::setDivider(uint8_t divider)
 {
     if (divider > 0)
         m_divider = divider;

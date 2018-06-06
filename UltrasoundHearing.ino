@@ -7,9 +7,9 @@
 #include <Audio.h>
 #include <Wire.h>
 
-const int samplingFs = 192000;
-const int divider    = 8;
-const int fileFs     = samplingFs / divider;
+const int     samplingFs = 192000;
+const uint8_t divider    = 8;
+const int     fileFs     = samplingFs / divider;
 
 //const int micInput = AUDIO_INPUT_LINEIN;
 const int micInput = AUDIO_INPUT_MIC;
