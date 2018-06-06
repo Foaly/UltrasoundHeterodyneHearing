@@ -1,5 +1,5 @@
-#include "WavFileWriter/WavFileWriter.hpp"
-#include "WavFileWriter/Downsampler.hpp"
+#include "WavFileWriter/WavFileWriter.cpp" // this is an ugly hack, because Arduino lacks a project structure...
+#include "WavFileWriter/Downsampler.cpp"// this is an ugly hack, because Arduino lacks a project structure...
 #include "Utils.hpp"
 
 #include <SerialFlash.h>

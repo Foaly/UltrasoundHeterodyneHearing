@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////
 
-//#include "WavFileWriter.hpp"
+#include "WavFileWriter.hpp"
 
 #include <SPI.h>
 

@@ -23,6 +23,9 @@
 //
 ////////////////////////////////////////////////////////////
 
+#ifndef WAVFILEWRITER_INCLUDE
+#define WAVFILEWRITER_INCLUDE
+
 #include <SD.h>
 #include <SD_t3.h>
 #include <record_queue.h>
@@ -46,4 +49,4 @@ private:
     byte                  m_buffer[512];
 };
 
-#include "WavFileWriter.cpp"
+#endif // WAVFILEWRITER_INCLUDE
