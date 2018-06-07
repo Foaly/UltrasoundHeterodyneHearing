@@ -4,6 +4,7 @@ Downsampler::Downsampler() :
     AudioStream(1, m_inputQueueArray),
     m_output(NULL),
     m_divider(1),
+    m_remainder(0),
     m_firstRun(true)
 {
 
@@ -13,7 +14,10 @@ Downsampler::Downsampler() :
 void Downsampler::setDivider(uint8_t divider)
 {
     if (divider > 0)
+    {
         m_divider = divider;
+        m_remainder = 0;
+    }
 }
 
 
@@ -27,7 +31,6 @@ void Downsampler::setupNewBuffer()
 }
 
 
-// TODO: make non power of 2 safe, overlap
 void Downsampler::update()
 {
     if (m_firstRun)
@@ -46,8 +49,9 @@ void Downsampler::update()
     if (!inputBlock)
         return;
 
-    int16_t*       src = inputBlock->data;
-    const int16_t* end = src + AUDIO_BLOCK_SAMPLES;
+    int16_t*       src  = inputBlock->data;
+    const int16_t* end  = src + AUDIO_BLOCK_SAMPLES;
+                   src += m_remainder;
 
     for (; src < end; src += m_divider)
     {
@@ -62,6 +66,8 @@ void Downsampler::update()
             setupNewBuffer();
         }
     }
+
+    m_remainder = static_cast<uint8_t>(src - end);
 
     release(inputBlock);
 }

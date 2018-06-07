@@ -19,6 +19,7 @@ private:
     int16_t*          m_dst;
     uint32_t          m_samplesWritten;
     uint8_t           m_divider;
+    uint8_t           m_remainder;
     bool              m_firstRun;
 };
 
