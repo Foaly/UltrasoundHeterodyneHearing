@@ -30,41 +30,41 @@
 namespace {
 
     // Teensy Audio Shield Defaults
-    const unsigned int SDcard_CS_Pin    = 10;
-    const unsigned int SDcard_MOSI_Pin  =  7;
-    const unsigned int SDcard_SCK_Pin   = 14;
+    const uint8_t SDcard_CS_Pin    = 10;
+    const uint8_t SDcard_MOSI_Pin  =  7;
+    const uint8_t SDcard_SCK_Pin   = 14;
 
-    // Use these with the Teensy 3.5 & 3.6 SD card
-    //const unsigned int SDcard_CS_Pin    = BUILTIN_SDCARD
-    //const unsigned int SDcard_MOSI_Pin  = 11  // not actually used
-    //const unsigned int SDcard_SCK_Pin   = 13  // not actually used
+    // Use these with the Teensy 3.5 & 3.6 SD card (Should work, but not yet tested)
+    //const uint8_t SDcard_CS_Pin    = BUILTIN_SDCARD
+    //const uint8_t SDcard_MOSI_Pin  = 11  // not actually used
+    //const uint8_t SDcard_SCK_Pin   = 13  // not actually used
 
-    // Use these for the SD+Wiz820 or other adaptors
-    //const unsigned int SDcard_CS_Pin    =  4
-    //const unsigned int SDcard_MOSI_Pin  = 11
-    //const unsigned int SDcard_SCK_Pin   = 13
+    // Use these for the SD+Wiz820 or other adaptors (Should work, but not yet tested)
+    //const uint8_t SDcard_CS_Pin    =  4
+    //const uint8_t SDcard_MOSI_Pin  = 11
+    //const uint8_t SDcard_SCK_Pin   = 13
 
     // The following functions takes integers in host byte order
     // and writes them to a stream as little endian
 
-    void encode(File& file, unsigned short value) {
-        unsigned char bytes[] =
+    void encode(File& file, uint16_t value) {
+        uint8_t bytes[] =
         {
-            static_cast<unsigned char>(value & 0xFF),
-            static_cast<unsigned char>(value >> 8)
+            static_cast<uint8_t>(value & 0xFF),
+            static_cast<uint8_t>(value >> 8)
         };
-        file.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+        file.write(reinterpret_cast<const uint8_t*>(bytes), sizeof(bytes));
     }
 
-    void encode(File& file, unsigned int value) {
-        unsigned char bytes[] =
+    void encode(File& file, uint32_t value) {
+        uint8_t bytes[] =
         {
-            static_cast<unsigned char>(value & 0x000000FF),
-            static_cast<unsigned char>((value & 0x0000FF00) >> 8),
-            static_cast<unsigned char>((value & 0x00FF0000) >> 16),
-            static_cast<unsigned char>((value & 0xFF000000) >> 24),
+            static_cast<uint8_t> (value & 0x000000FF),
+            static_cast<uint8_t>((value & 0x0000FF00) >>  8),
+            static_cast<uint8_t>((value & 0x00FF0000) >> 16),
+            static_cast<uint8_t>((value & 0xFF000000) >> 24),
         };
-        file.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+        file.write(reinterpret_cast<const uint8_t*>(bytes), sizeof(bytes));
     }
 }
 
@@ -118,39 +118,39 @@ bool WavFileWriter::isWriting() {
 
 void WavFileWriter::writeHeader(unsigned int sampleRate, unsigned int channelCount) {
     // Write the main chunk ID
-    char mainChunkId[4] = {'R', 'I', 'F', 'F'};
+    uint8_t mainChunkId[4] = {'R', 'I', 'F', 'F'};
     m_file.write(mainChunkId, sizeof(mainChunkId));
 
     // Write the main chunk header
-    unsigned int mainChunkSize = 0; // placeholder, will be written later
+    uint32_t mainChunkSize = 0; // placeholder, will be written on closing
     encode(m_file, mainChunkSize);
-    char mainChunkFormat[4] = {'W', 'A', 'V', 'E'};
+    uint8_t mainChunkFormat[4] = {'W', 'A', 'V', 'E'};
     m_file.write(mainChunkFormat, sizeof(mainChunkFormat));
 
     // Write the sub-chunk 1 ("format") id and size
-    char fmtChunkId[4] = {'f', 'm', 't', ' '};
+    uint8_t fmtChunkId[4] = {'f', 'm', 't', ' '};
     m_file.write(fmtChunkId, sizeof(fmtChunkId));
-    unsigned int fmtChunkSize = 16;
+    uint32_t fmtChunkSize = 16;
     encode(m_file, fmtChunkSize);
 
     // Write the format (PCM)
-    unsigned short format = 1;
+    uint16_t format = 1;
     encode(m_file, format);
 
     // Write the sound attributes
-    encode(m_file, static_cast<unsigned short>(channelCount));
-    encode(m_file, static_cast<unsigned int>(sampleRate));
-    unsigned int byteRate = sampleRate * channelCount * 2;
+    encode(m_file, static_cast<uint16_t>(channelCount));
+    encode(m_file, static_cast<uint32_t>(sampleRate));
+    uint32_t byteRate = sampleRate * channelCount * 2;
     encode(m_file, byteRate);
-    unsigned short blockAlign = channelCount * 2;
+    uint16_t blockAlign = channelCount * 2;
     encode(m_file, blockAlign);
-    unsigned short bitsPerSample = 16;
+    uint16_t bitsPerSample = 16;
     encode(m_file, bitsPerSample);
 
     // Write the sub-chunk 2 ("data") id and size
-    char dataChunkId[4] = {'d', 'a', 't', 'a'};
+    uint8_t dataChunkId[4] = {'d', 'a', 't', 'a'};
     m_file.write(dataChunkId, sizeof(dataChunkId));
-    unsigned int dataChunkSize = 0; // placeholder, will be written on closing
+    uint32_t dataChunkSize = 0; // placeholder, will be written on closing
     encode(m_file, dataChunkSize);
 
     m_totalBytesWritten += 44;
@@ -177,12 +177,12 @@ bool WavFileWriter::update() {
     //elapsedMicros usec = 0;
     m_file.write(m_buffer, 512);
     // Uncomment these lines to see how long SD writes
-    // are taking.  A pair of audio blocks arrives every
+    // are taking. A pair of audio blocks arrives every
     // 5802 microseconds, so hopefully most of the writes
-    // take well under 5802 us.  Some will take more, as
+    // take well under 5802 us. Some will take more, as
     // the SD library also must write to the FAT tables
     // and the SD card controller manages media erase and
-    // wear leveling.  The queue1 object can buffer
+    // wear leveling. The m_queue object can buffer
     // approximately 301700 us of audio, to allow time
     // for occasional high SD card latency, as long as
     // the average write time is under 5802 us.
@@ -201,7 +201,7 @@ bool WavFileWriter::close() {
 
     m_queue.end();
     while (m_queue.available() > 0) {
-        m_file.write((byte*)m_queue.readBuffer(), 256);
+        m_file.write(reinterpret_cast<const uint8_t*>(m_queue.readBuffer()), 256);
         m_queue.freeBuffer();
         m_totalBytesWritten += 256;
     }
@@ -214,9 +214,8 @@ bool WavFileWriter::close() {
     m_file.flush();
 
     // Update the main chunk size and data sub-chunk size
-    unsigned int fileSize = static_cast<unsigned int>(m_totalBytesWritten);
-    unsigned int mainChunkSize = fileSize - 8;  // 8 bytes RIFF header
-    unsigned int dataChunkSize = fileSize - 44; // 44 bytes RIFF + WAVE headers
+    uint32_t mainChunkSize = m_totalBytesWritten - 8;  // 8 bytes RIFF header
+    uint32_t dataChunkSize = m_totalBytesWritten - 44; // 44 bytes RIFF + WAVE headers
     m_file.seek(4);
     encode(m_file, mainChunkSize);
     m_file.seek(40);

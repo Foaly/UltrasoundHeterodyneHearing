@@ -45,8 +45,8 @@ private:
     bool                  m_isWriting;
     File                  m_file;
     AudioRecordQueue&     m_queue;
-    unsigned int          m_totalBytesWritten;
-    byte                  m_buffer[512];
+    uint32_t              m_totalBytesWritten;
+    uint8_t               m_buffer[512];
 };
 
 #endif // WAVFILEWRITER_INCLUDE
