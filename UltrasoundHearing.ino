@@ -37,12 +37,18 @@ AudioInputI2S            audioInput;
 AudioOutputI2S           audioOutput;
 AudioRecordQueue         queue;
 Downsampler              downsampler;
+AudioEffectMultiply      multiply;
+AudioFilterStateVariable HPfilter;
+
 
 //record from mic
-AudioConnection          patchCord1(audioInput, 0, downsampler, 0);
-AudioConnection          patchCord2(downsampler, 0, queue, 0);
-AudioConnection          patchCord3(downsampler, 0, audioOutput, 0);
-AudioConnection          patchCord4(downsampler, 0, audioOutput, 1);
+AudioConnection          patchCord1(audioInput, 1, HPfilter, 0);
+AudioConnection          patchCord2(HPfilter, 2, multiply, 0);
+AudioConnection          patchCord3(sine, 0, multiply, 1);
+AudioConnection          patchCord4(multiply, 0, queue, 0);
+AudioConnection          patchCord5(multiply, 0, audioOutput, 0);
+AudioConnection          patchCord6(multiply, 0, audioOutput, 1);
+AudioConnection          patchCord7(audioInput, 0, queue, 0);
 
 AudioControlSGTL5000     audioShield;
 
@@ -59,12 +65,12 @@ void setup() {
     AudioMemory(150);
     audioShield.enable();
     audioShield.inputSelect(micInput);
-    audioShield.micGain(50);  //0-63
+    audioShield.micGain(60);  //0-63
     audioShield.volume(0.8);  //0-1
   
     sine.begin(WAVEFORM_SINE);
     sine.amplitude(0.9);
-    sine.frequency(440);
+    sine.frequency(39000 * (AUDIO_SAMPLE_RATE_EXACT / samplingFs));
 
     // Using a downsampler to transpose the ultrasound to preceivable
     // tones also introduces timescaling (shortening in this case). 
@@ -88,7 +94,7 @@ void loop() {
 
         if ( incomingByte == '1' ) {
             Serial.println("Start recording!");
-            wavWriter.open("Ultra.wav", fileFs, 1);
+            wavWriter.open("Ultra.wav", samplingFs, 1);
         }
         if ( incomingByte == '2' ) {
             Serial.println("Stop recording!");
